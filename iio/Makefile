@@ -5,13 +5,15 @@ BINDIR=usr/bin
 INSTALL_PROGRAM=install -m 755 -p
 DEL_FILE=rm -f
 
-all: iio_event_monitor lsiio iio_generic_buffer
+all: iio_event_monitor lsiio iio_generic_buffer iio_test
 
 iio_event_monitor: iio_event_monitor.o iio_utils.o
 
 lsiio: lsiio.o iio_utils.o
 
 iio_generic_buffer: iio_generic_buffer.o iio_utils.o
+
+iio_test: iio_test.o
 
 %.o: %.c iio_utils.h
 
@@ -28,4 +30,4 @@ uninstall:
 
 .PHONY: clean
 clean:
-	rm -f *.o iio_event_monitor lsiio iio_generic_buffer
+	rm -f *.o iio_event_monitor lsiio iio_generic_buffer iio_test
