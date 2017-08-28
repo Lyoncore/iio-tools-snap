@@ -16,6 +16,7 @@ parts:
         - iio_generic_buffer
         - lsiio
         - iio_test
+        - iio_sysfs_test.sh
 
 apps:
     iio-event-monitor:
@@ -38,6 +39,12 @@ apps:
           - i2c
     iio-test:
       command: iio_test
+      plugs:
+          - iio
+          - hardware-observe
+          - i2c
+    iio-sysfs-test:
+      command: iio_sysfs_test.sh
       plugs:
           - iio
           - hardware-observe
