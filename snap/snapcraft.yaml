@@ -24,28 +24,23 @@ apps:
       plugs:
           - iio
           - hardware-observe
-          - i2c
     lsiio:
       command: lsiio
       plugs:
           - iio
           - hardware-observe
-          - i2c
     iio-generic-buffer:
       command: iio_generic_buffer
       plugs:
           - iio
           - hardware-observe
-          - i2c
     iio-test:
       command: iio_test
       plugs:
           - iio
           - hardware-observe
-          - i2c
     iio-sysfs-test:
       command: iio_sysfs_test.sh
       plugs:
           - iio
           - hardware-observe
-          - i2c
