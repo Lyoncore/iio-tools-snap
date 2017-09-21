@@ -1,5 +1,5 @@
 name: demo-iio-tools
-version: '0.1'
+version: '0.2'
 summary: a demo for iio tools
 description: |
   This is iio tools for testing iio interface in gadget snap
@@ -15,6 +15,11 @@ parts:
         - iio_event_monitor
         - iio_generic_buffer
         - lsiio
+  st-sensor:
+    plugin: dump
+    source: st_sensor/
+    organize:
+        sensor_test: bin/
 
 apps:
     iio-event-monitor:
@@ -29,6 +34,11 @@ apps:
           - hardware-observe
     iio-generic-buffer:
       command: iio_generic_buffer
+      plugs:
+          - iio
+          - hardware-observe
+    st-sensor:
+      command: st_sensor
       plugs:
           - iio
           - hardware-observe
