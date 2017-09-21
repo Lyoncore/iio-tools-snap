@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+# Copyright 2016 Canonical Ltd.
+# All rights reserved.
+#
+# Written by:
+#    Authors: Gavin Lin <gavin.lin@canonical.com>
+
+"""
+This script will check if IIO sensor reading changes.
+you'll need to change environmental condition manually before timeout.
+
+To see how to use, please run "./caracalla_sensor_test --help"
+"""
+
+import argparse
+import time
+import sys
+import os
+
+# Read arguments
+parser = argparse.ArgumentParser(
+    description=("This script will check IIO sensor reading, if you need"
+                 "to monitor if reading changes(run with -c),"
+                 "you'll need to change environmental condition manually"
+                 "before timeout."))
+parser.add_argument("-n", "--name", type=str, required=True,
+    help="Sensor name registered in IIO subsystem.")
+parser.add_argument("-f", "--file", type=str, required=True,
+    help="Sensor reading output file name.")
+parser.add_argument("-c", "--change", action="store_true",
+    help="Monitoring if reading changes,"
+         "need to change environmental condition manually.")
+parser.add_argument("-t", "--timeout", type=int, default=20,
+    help="Timeout, in sec.")
+args = parser.parse_args()
+
+
+# Set path to IIO devices
+iio_path = "/sys/bus/iio/devices/"
+sensor_path = ""
+
+def find_sensor(sensor):
+    # Find which iio device is target sensor
+    for dir in os.listdir(iio_path):
+        try:
+            with open(os.path.join(iio_path, dir, "name"), "r",
+                    encoding="utf-8") as name_file:
+                if name_file.readline().strip() == args.name:
+                    sensor_path = os.path.join(iio_path, dir)
+        except FileNotFoundError:
+            pass  # There's no name file for some sensors
+
+# If fail to find target sensor
+if sensor_path == "":
+    print("Can't find sensor", args.name, "in IIO subsystem.")
+    sys.exit(1)
+
+# Set timeout and get initial sensor reading
+timeout = time.time() + args.timeout
+with open(os.path.join(sensor_path, args.file), "r",
+          encoding="utf-8") as reading_file:
+    initial_sensor_reading = float(reading_file.readline().strip())
+
+# Check if the reading is numeric
+try:
+    float(initial_sensor_reading)
+except ValueError:
+    print(" Test failed, reading from", args.file, "is not numeric.")
+    sys.exit(1)
+print("Initial sensor reading:", initial_sensor_reading)
+
+# Check if need to continue monitoring reading change
+if not args.change:
+    sys.exit(0)
+
+# Monitor if sensor reading chenges
+while True:
+    if time.time() > timeout:
+        print("Failed to detect reading change in file", args.file,
+              "for sensor", args.name)
+        sys.exit(1)
+    with open(os.path.join(sensor_path, args.file), "r",
+              encoding="utf-8") as reading_file:
+        current_sensor_reading = float(reading_file.readline().strip())
+        print("Current sensor reading:", current_sensor_reading)
+        if current_sensor_reading != initial_sensor_reading:
+            print("Reading change detected in file", args.file,
+                  "for sensor", args.name)
+            sys.exit(0)
+    time.sleep(0.5)
