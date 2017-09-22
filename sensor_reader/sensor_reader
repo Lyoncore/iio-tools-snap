@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+# Copyright 2017 Canonical Ltd.
+# All rights reserved.
+#
+# Written by:
+#    Authors: Darren Wu <darren.wu@canonical.com>
+
+"""
+This script calculates and outputs of sensors:
+	- ST Micro LNG2DMTR (accelerometer)
+	- ST Micro LPS22HB (Pressure)
+	- ST Micro HTS221 (Relative humidity and temperature)
+
+To see how to use, please run "demo-iio-tools.sensor-reader --help"
+"""
+
+import argparse
+import sys
+import os
+import logging
+from enum import Enum
+
+_logger = logging.getLogger(__file__)
+
+class IIODevice:
+    def __init__(self,sensor_name):
+        self.iio_sysfs_path = "/sys/bus/iio/devices/"
+        self.sensor_path = ""
+        # Find which iio device is target sensor
+        for dir in os.listdir(self.iio_sysfs_path):
+            try:
+                with open(os.path.join(self.iio_sysfs_path, dir, "name"), "r",
+                        encoding="utf-8") as name_file:
+                    if name_file.readline().strip() == sensor_name:
+                        self.sensor_path = os.path.join(self.iio_sysfs_path, dir)
+                        break
+            except FileNotFoundError:
+                pass  # There's no name file for some sensors
+    
+    def _read_sensor_attr(self, attr):
+        with open(os.path.join(self.sensor_path, attr), "r",
+            encoding="utf-8") as reading_file:
+                return float(reading_file.readline().strip())
+
+class SensorLgn2dm(IIODevice):
+    def __init__(self):
+        self.sensor_name = "lng2dm"
+        super().__init__(self.sensor_name)
+
+    def get_accel_x(self):
+        accel_x_raw = self._read_sensor_attr("in_accel_x_raw")
+        accel_x_scale = self._read_sensor_attr("in_accel_x_scale")
+        _logger.debug("\n\tin_accel_x_raw:{}\n\tin_accel_x_scal:{}".format(accel_x_raw, accel_x_scale))
+        return accel_x_raw * accel_x_scale
+
+    def get_accel_y(self):
+        accel_y_raw = self._read_sensor_attr("in_accel_y_raw")
+        accel_y_scale = self._read_sensor_attr("in_accel_y_scale")
+        _logger.debug("\n\tin_accel_y_raw:{}\n\tin_accel_y_scal:{}".format(accel_y_raw, accel_y_scale))
+        return accel_y_raw * accel_y_scale
+
+    def get_accel_z(self):
+        accel_z_raw = self._read_sensor_attr("in_accel_z_raw")
+        accel_z_scale = self._read_sensor_attr("in_accel_z_scale")
+        _logger.debug("\n\tin_accel_z_raw:{}\n\tin_accel_z_scal:{}".format(accel_z_raw, accel_z_scale))
+        return accel_z_raw * accel_z_scale
+
+class SensorLps22hb(IIODevice):
+    def __init__(self):
+        self.sensor_name = "lps22hb"
+        super().__init__(self.sensor_name)
+        
+    def get_pressure(self):
+        press_raw = self._read_sensor_attr("in_pressure_raw")
+        press_scale = self._read_sensor_attr("in_pressure_scale")
+        _logger.debug("\n\tin_pressure_raw:{}\n\tin_pressure_scal:{}".format(press_raw, press_scale))
+        return press_raw * press_scale
+
+    def get_temperature(self):
+        temp_raw = self._read_sensor_attr("in_temp_raw")
+        temp_scale = self._read_sensor_attr("in_temp_scale")
+        _logger.debug("\n\tin_temp_raw:{}\n\tin_temp_scal:{}".format(temp_raw, temp_scale))
+        return temp_raw * temp_scale
+
+class SensorHts221(IIODevice):
+    def __init__(self):
+        self.sensor_name = "hts221"
+        super().__init__(self.sensor_name)
+        
+    def get_humidity(self):
+        rh_raw = self._read_sensor_attr("in_humidityrelative_raw")
+        rh_offset = self._read_sensor_attr("in_humidityrelative_offset")
+        rh_scale = self._read_sensor_attr("in_humidityrelative_scale")
+        _logger.debug("\n\tin_humidityrelative_raw:{}\n\tin_humidityrelative_offset:{}\n\tin_humidityrelative_scale:{}".format(rh_raw, rh_offset, rh_scale))
+        return (rh_raw + rh_offset) * rh_scale
+
+    def get_temperature(self):
+        temp_raw = self._read_sensor_attr("in_temp_raw")
+        temp_offset = self._read_sensor_attr("in_temp_offset")
+        temp_scale = self._read_sensor_attr("in_temp_scale")
+        _logger.debug("\n\tin_temp_raw:{}\n\tin_temp_offset:{}\n\tin_temp_scal:{}".format(temp_raw, temp_offset, temp_scale))
+        return (temp_raw + temp_offset) * temp_scale
+
+def parseargs(argv=None):
+# Read arguments
+    parser = argparse.ArgumentParser(
+            description=("This script calculates and outputs of sensors:\n"
+                    "- ST Micro LNG2DMTR (accelerometer)\n"
+                    "- ST Micro LPS22HB (Pressure)\n"
+                    "- ST Micro HTS221 (Relative humidity and temperature)\n"), 
+                    formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("name", help="Sensor name: [ lgn2dm | lps22hb | hts221 ]")
+    parser.add_argument("-d", "--debug", action='store_true', default=False, help="Enable debugging output")
+
+    args = parser.parse_args(argv)
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+
+    return args
+
+def main(argv=None):
+    args = parseargs(argv)
+
+    if args.name == 'lgn2dm':
+        Sensor = SensorLgn2dm()
+        accel_x = Sensor.get_accel_x()
+        accel_y = Sensor.get_accel_y()
+        accel_z = Sensor.get_accel_z()
+        print('accel_x(m/s^): {}'.format(accel_x))
+        print('accel_y(m/s^): {}'.format(accel_y))
+        print('accel_z(m/s^): {}'.format(accel_z))
+    elif args.name == 'lps22hb':
+        Sensor = SensorLps22hb()
+        press = Sensor.get_pressure()
+        temp = Sensor.get_temperature()
+        print('Pressure(kPa): {}'.format(press))
+        print('Temperature(m degC): {}'.format(temp))
+    elif args.name == 'hts221':
+        Sensor = SensorHts221()
+        rh = Sensor.get_humidity()
+        temp = Sensor.get_temperature()
+        print('Relative Humidity(%): {}'.format(rh))
+        print('Temperature(degC): {}'.format(temp))
+    else:
+        print('Unknown sensor: {}'.format(args.name))
+        print('Supported sensor: [ lgn2dm | lps22hb | hts221 ]')
+
+
+sys.exit(main())

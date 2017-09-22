@@ -2,7 +2,7 @@ name: demo-iio-tools
 version: '0.2'
 summary: a demo for iio tools
 description: |
-  This is iio tools for testing iio interface in gadget snap
+  This is iio tools for testing iio interface in snap
 
 grade: devel # must be 'stable' to release into candidate/stable channels
 confinement: strict # use 'strict' once you have the right plugs and slots
@@ -17,28 +17,28 @@ parts:
         - lsiio
   st-sensor:
     plugin: dump
-    source: st_sensor/
+    source: sensor_reader/
     organize:
         sensor_test: bin/
 
 apps:
-    iio-event-monitor:
-      command: iio_event_monitor
-      plugs:
-          - iio
-          - hardware-observe
+    #iio-event-monitor:
+    #  command: iio_event_monitor
+    #  plugs:
+    #      - iio
+    #      - hardware-observe
     lsiio:
       command: lsiio
       plugs:
           - iio
           - hardware-observe
-    iio-generic-buffer:
-      command: iio_generic_buffer
-      plugs:
-          - iio
-          - hardware-observe
-    st-sensor:
-      command: st_sensor
+    #iio-generic-buffer:
+    #  command: iio_generic_buffer
+    #  plugs:
+    #      - iio
+    #      - hardware-observe
+    sensor-reader:
+      command: sensor_reader
       plugs:
           - iio
           - hardware-observe
